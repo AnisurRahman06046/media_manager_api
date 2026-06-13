@@ -1,6 +1,6 @@
 import { Worker } from 'bullmq';
 import { redisConfig } from '../bull/bull.config';
-import { MediaProcessingService } from '../../../media/media-processing.service';
+import { MediaProcessingService } from '../../media/media-processing.service';
 
 export class ImageProcessor {
   constructor(private readonly mediaService: MediaProcessingService) {
