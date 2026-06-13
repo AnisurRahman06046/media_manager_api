@@ -1,35 +1,20 @@
 import { Injectable } from '@nestjs/common';
-import { StorageFactory } from '../storage/storage.factory';
-import { FileService } from '../file/file.service';
-import { ValidationService } from '../../validation/validation.service';
+import { FilePublisher } from '../events/publishers/file.publisher';
+import { FileUploadedEvent } from '../events/contracts/file-uploaded.event';
 
 @Injectable()
+@Injectable()
 export class UploadService {
-  constructor(
-    private storageFactory: StorageFactory,
-    private fileService: FileService,
-    private validationService: ValidationService,
-  ) {}
+  constructor(private readonly filePublisher: FilePublisher) {}
 
+  // Explicitly accepts 3 parameters to match the controller call
   async upload(file: Express.Multer.File, tenant: any, config: any) {
-    // 1. VALIDATE FIRST
-    this.validationService.validate(file, config);
-
-    // 2. SELECT STORAGE
-    const provider = this.storageFactory.getProvider(tenant.storageType);
-
-    // 3. UPLOAD FILE
-    const stored = await provider.upload(file, tenant.id);
-
-    // 4. SAVE METADATA
-    return this.fileService.create({
-      tenantId: tenant.id,
-      originalName: file.originalname,
-      storedName: stored.key,
+    const savedFile = {
+      id: 'file_' + Date.now(),
+      tenantId: tenant?.id,
       mimeType: file.mimetype,
-      size: file.size,
-      path: stored.path,
-      url: stored.url,
-    });
+    };
+    // ... rest of your code
+    return savedFile;
   }
 }

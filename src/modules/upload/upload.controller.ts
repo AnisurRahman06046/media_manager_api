@@ -14,7 +14,8 @@ export class UploadController {
 
   @Post()
   @UseInterceptors(FileInterceptor('file'))
-  upload(@UploadedFile() file: Express.Multer.File, @Req() req: any) {
+  async upload(@UploadedFile() file: Express.Multer.File, @Req() req: any) {
+    // Controller passes 3 arguments: file, tenant object, and config object
     return this.uploadService.upload(file, req.tenant, req.config);
   }
 }
