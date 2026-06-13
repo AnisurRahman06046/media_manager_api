@@ -10,11 +10,11 @@ import { UploadService } from './upload.service';
 
 @Controller('upload')
 export class UploadController {
-  constructor(private uploadService: UploadService) {}
+  constructor(private readonly uploadService: UploadService) {}
 
   @Post()
   @UseInterceptors(FileInterceptor('file'))
   upload(@UploadedFile() file: Express.Multer.File, @Req() req: any) {
-    return this.uploadService.upload(file, req.tenant);
+    return this.uploadService.upload(file, req.tenant, req.config);
   }
 }

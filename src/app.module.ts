@@ -1,8 +1,9 @@
-/* eslint-disable @typescript-eslint/no-unsafe-member-access */
-/* eslint-disable @typescript-eslint/no-unsafe-call */
-import { Module } from '@nestjs/common';
+import { Module, NestModule, MiddlewareConsumer } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
-import { ConfigModule, ConfigService } from '@nestjs/config'; // 1. Import Config Modules
+import {
+  ConfigModule as NestConfigModule,
+  ConfigService as NestConfigService,
+} from '@nestjs/config'; // 1. Alias NestJS Config
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { TenantModule } from './modules/tenant/tenant.module';
@@ -10,19 +11,22 @@ import { FileModule } from './modules/file/file.module';
 import { StorageModule } from './modules/storage/storage.module';
 import { UploadModule } from './modules/upload/upload.module';
 
+// 2. Import your custom database ConfigModule with an Alias
+import { ConfigModule as TenantConfigModule } from './modules/config/config.module';
+
+import { TenantMiddleware } from './common/middleware/tenant.middleware';
+import { ConfigMiddleware } from './common/middleware/config.middleware';
+
 @Module({
   imports: [
-    // 2. Initialize the ConfigModule globally
-    ConfigModule.forRoot({
+    NestConfigModule.forRoot({
       isGlobal: true,
     }),
 
-    // 3. Switch to forRootAsync to dynamically pull data from the .env file
-
     TypeOrmModule.forRootAsync({
-      imports: [ConfigModule],
-      inject: [ConfigService],
-      useFactory: (configService: ConfigService) => ({
+      imports: [NestConfigModule],
+      inject: [NestConfigService],
+      useFactory: (configService: NestConfigService) => ({
         type: 'postgres',
         host: configService.get<string>('DB_HOST'),
         port: configService.get<number>('DB_PORT'),
@@ -30,7 +34,7 @@ import { UploadModule } from './modules/upload/upload.module';
         password: configService.get<string>('DB_PASSWORD'),
         database: configService.get<string>('DB_NAME'),
         autoLoadEntities: true,
-        synchronize: true, // Note: turn this off in production!
+        synchronize: true,
       }),
     }),
 
@@ -38,8 +42,13 @@ import { UploadModule } from './modules/upload/upload.module';
     FileModule,
     StorageModule,
     UploadModule,
+    TenantConfigModule, // 3. Include your custom module here so AppModule can resolve ConfigService
   ],
   controllers: [AppController],
   providers: [AppService],
 })
-export class AppModule {}
+export class AppModule implements NestModule {
+  configure(consumer: MiddlewareConsumer) {
+    consumer.apply(TenantMiddleware, ConfigMiddleware).forRoutes('*');
+  }
+}
