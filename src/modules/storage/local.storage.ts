@@ -5,33 +5,37 @@ import { StorageProvider, UploadResult } from './storage.interface';
 
 @Injectable()
 export class LocalStorage implements StorageProvider {
-  private basePath = 'uploads';
-
   async upload(
     file: Express.Multer.File,
     tenantId: string,
   ): Promise<UploadResult> {
-    const dir = `${this.basePath}/${tenantId}`;
+    const key = `${Date.now()}-${file.originalname}`;
+    return this.uploadBuffer(file.buffer, key, tenantId, file.mimetype);
+  }
+
+  async uploadBuffer(
+    buffer: Buffer,
+    key: string,
+    tenantId: string,
+    mimeType: string,
+  ): Promise<UploadResult> {
+    const dir = `uploads/${tenantId}/variants`;
 
     if (!fs.existsSync(dir)) {
       fs.mkdirSync(dir, { recursive: true });
     }
 
-    const fileName = `${Date.now()}-${file.originalname}`;
-    const fullPath = path.join(dir, fileName);
-
-    fs.writeFileSync(fullPath, file.buffer);
+    const fullPath = path.join(dir, key);
+    fs.writeFileSync(fullPath, buffer);
 
     return {
-      url: `/uploads/${tenantId}/${fileName}`,
+      url: `/uploads/${tenantId}/variants/${key}`,
       path: fullPath,
-      key: fileName,
+      key,
     };
   }
 
-  async delete(filePath: string): Promise<void> {
-    if (fs.existsSync(filePath)) {
-      fs.unlinkSync(filePath);
-    }
+  async download(filePath: string): Promise<Buffer> {
+    return fs.readFileSync(filePath);
   }
 }

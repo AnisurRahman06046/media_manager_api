@@ -5,6 +5,14 @@ export interface UploadResult {
 }
 
 export interface StorageProvider {
-  upload(file: Express.Multer.File, tenantId: string): Promise<UploadResult>;
-  delete(path: string): Promise<void>;
+  upload(file: Express.Multer.File, tenantId: string): Promise<any>;
+
+  uploadBuffer(
+    buffer: Buffer,
+    key: string,
+    tenantId: string,
+    mimeType: string,
+  ): Promise<any>;
+
+  download(path: string): Promise<Buffer>;
 }

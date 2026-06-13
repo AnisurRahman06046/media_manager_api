@@ -16,10 +16,22 @@ export class CloudinaryStorage implements StorageProvider {
     file: Express.Multer.File,
     tenantId: string,
   ): Promise<UploadResult> {
+    const key = `${Date.now()}-${file.originalname.split('.')[0]}`;
+    return this.uploadBuffer(file.buffer, key, tenantId, file.mimetype);
+  }
+
+  async uploadBuffer(
+    buffer: Buffer,
+    key: string,
+    tenantId: string,
+    mimeType: string,
+  ): Promise<UploadResult> {
+    const base64Data = buffer.toString('base64');
     const result = await cloudinary.uploader.upload(
-      `data:${file.mimetype};base64,${file.buffer.toString('base64')}`,
+      `data:${mimeType};base64,${base64Data}`,
       {
         folder: tenantId,
+        public_id: key,
       },
     );
 
@@ -28,6 +40,17 @@ export class CloudinaryStorage implements StorageProvider {
       path: result.public_id,
       key: result.public_id,
     };
+  }
+
+  async download(urlPath: string): Promise<Buffer> {
+    // Fetches the secure resource via URL link back to Node server context
+    const response = await fetch(urlPath);
+    if (!response.ok)
+      throw new Error(
+        `Could not fetch asset from Cloudinary: ${response.statusText}`,
+      );
+    const arrayBuffer = await response.arrayBuffer();
+    return Buffer.from(arrayBuffer);
   }
 
   async delete(publicId: string): Promise<void> {

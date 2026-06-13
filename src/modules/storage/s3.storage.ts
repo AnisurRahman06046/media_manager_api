@@ -3,12 +3,12 @@ import {
   S3Client,
   PutObjectCommand,
   DeleteObjectCommand,
+  GetObjectCommand,
 } from '@aws-sdk/client-s3';
 import { StorageProvider, UploadResult } from './storage.interface';
 
 @Injectable()
 export class S3Storage implements StorageProvider {
-  // Added ?? '' to satisfy TypeScript's strict string typing
   private s3 = new S3Client({
     region: process.env.AWS_REGION ?? '',
     credentials: {
@@ -24,13 +24,21 @@ export class S3Storage implements StorageProvider {
     tenantId: string,
   ): Promise<UploadResult> {
     const key = `${tenantId}/${Date.now()}-${file.originalname}`;
+    return this.uploadBuffer(file.buffer, key, tenantId, file.mimetype);
+  }
 
+  async uploadBuffer(
+    buffer: Buffer,
+    key: string,
+    tenantId: string,
+    mimeType: string,
+  ): Promise<UploadResult> {
     await this.s3.send(
       new PutObjectCommand({
         Bucket: this.bucket,
         Key: key,
-        Body: file.buffer,
-        ContentType: file.mimetype,
+        Body: buffer,
+        ContentType: mimeType,
       }),
     );
 
@@ -39,6 +47,18 @@ export class S3Storage implements StorageProvider {
       path: key,
       key,
     };
+  }
+
+  async download(path: string): Promise<Buffer> {
+    const response = await this.s3.send(
+      new GetObjectCommand({
+        Bucket: this.bucket,
+        Key: path,
+      }),
+    );
+
+    if (!response.Body) throw new Error('S3 file response empty');
+    return Buffer.from(await response.Body.transformToByteArray());
   }
 
   async delete(key: string): Promise<void> {
