@@ -15,6 +15,8 @@ export class Tenant {
 
   @Column({ unique: true })
   apiKey: string;
+  @Column({ default: 'LOCAL' })
+  storageType: 'LOCAL' | 'S3' | 'CLOUDINARY';
 
   @CreateDateColumn()
   createdAt: Date;

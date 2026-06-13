@@ -1,10 +1,11 @@
 import { Module } from '@nestjs/common';
-import { StorageService } from './storage.service';
-import { StorageController } from './storage.controller';
+import { StorageFactory } from './storage.factory';
+import { LocalStorage } from './local.storage';
+import { S3Storage } from './s3.storage';
+import { CloudinaryStorage } from './cloudinary.storage';
 
 @Module({
-  providers: [StorageService],
-  controllers: [StorageController],
-  exports: [StorageService],
+  providers: [StorageFactory, LocalStorage, S3Storage, CloudinaryStorage],
+  exports: [StorageFactory],
 })
 export class StorageModule {}
